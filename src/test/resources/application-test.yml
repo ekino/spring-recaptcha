@@ -1,0 +1,20 @@
+spring:
+  main:
+    banner-mode: off
+
+security:
+  recaptcha:
+    enabled: true
+    secret: secretKey
+    by-pass-key: by-pass-key
+    url-patterns:
+      - "/test"
+    filtered-methods:
+      - POST
+      - PUT
+
+    client:
+      url: http://localhost:${wiremock.server.port:8080}
+      connect-timeout: 1000
+      read-timeout: 1000
+      write-timeout: 1000

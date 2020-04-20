@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.ekino.oss.recaptcha.config.ReCaptchaConfiguration

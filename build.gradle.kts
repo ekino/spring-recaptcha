@@ -1,68 +1,116 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    val kotlinVersion = "1.3.71"
-    `java-library`
-    `maven-publish`
+  val kotlinVersion = "1.3.71"
+  `java-library`
+  `maven-publish`
 
-    id("org.springframework.boot") version "2.2.6.RELEASE"
-    id("io.spring.dependency-management") version "1.0.9.RELEASE"
+  kotlin("jvm") version kotlinVersion
+  kotlin("plugin.spring") version kotlinVersion
+  kotlin("kapt") version kotlinVersion
 
-    kotlin("jvm") version kotlinVersion
-    kotlin("plugin.spring") version kotlinVersion
-
-    id("com.ekino.oss.plugin.kotlin-quality") version "1.0.0"
-    id("org.jetbrains.dokka") version "0.9.18"
+  id("com.ekino.oss.plugin.kotlin-quality") version "1.0.0"
+  id("org.jetbrains.dokka") version "0.10.0"
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_11
+java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
-    mavenCentral()
-    jcenter()
-    mavenLocal()
+  mavenCentral()
+  jcenter()
+  mavenLocal()
 }
 
 dependencies {
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:${property("spring-boot.version")}"))
+  implementation(platform("org.springframework.boot:spring-boot-dependencies:${property("spring-boot.version")}"))
 
-    implementation("org.springframework.boot:spring-boot-starter-web")
+  implementation("org.springframework.boot:spring-boot-starter-web")
 
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+  implementation("org.jetbrains.kotlin:kotlin-reflect")
+  implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    testImplementation("com.willowtreeapps.assertk:assertk-jvm:${property("assertk-jvm.version")}")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.junit.jupiter:junit-jupiter-api")
-    testImplementation("org.junit.jupiter:junit-jupiter-params")
-    testImplementation("com.ninja-squad:springmockk:${property("springmockk.version")}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+  implementation("io.github.microutils:kotlin-logging:${property("kotlin-logging.version")}")
+
+  implementation("com.squareup.retrofit2:retrofit:${property("retrofit.version")}")
+  implementation("com.squareup.retrofit2:converter-jackson:${property("retrofit.version")}")
+
+  annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:${property("spring-boot.version")}")
+  kapt("org.springframework.boot:spring-boot-configuration-processor:${property("spring-boot.version")}")
+
+  testImplementation("com.willowtreeapps.assertk:assertk-jvm:${property("assertk-jvm.version")}")
+  testImplementation("org.springframework.boot:spring-boot-starter-test")
+  testImplementation("org.junit.jupiter:junit-jupiter")
+  testImplementation("com.ninja-squad:springmockk:${property("springmockk.version")}")
+  testImplementation("com.github.tomakehurst:wiremock:${property("wiremock.version")}")
+  testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock:${property("spring-cloud-contract-wiremock.version")}")
 }
 
 configurations {
-    all {
-        exclude(module = "junit")
-        exclude(module = "mockito-core")
-    }
+  all {
+    exclude(module = "junit")
+    exclude(module = "mockito-core")
+  }
+}
+
+val sourcesJar by tasks.registering(Jar::class) {
+  archiveClassifier.set("sources")
+  from(sourceSets.main.get().allJava)
+}
+
+val javadocJar by tasks.registering(Jar::class) {
+  dependsOn("dokka")
+  archiveClassifier.set("javadoc")
+  from(buildDir.resolve("dokka"))
 }
 
 tasks {
-    withType<Test> {
-        useJUnitPlatform()
-    }
+  withType<Test> {
+    useJUnitPlatform()
+    jvmArgs(
+      "-Dspring.test.constructor.autowire.mode=ALL",
+      "-Djunit.jupiter.testinstance.lifecycle.default=per_class"
+    )
+  }
 
-    withType<KotlinCompile> {
-        kotlinOptions {
-            freeCompilerArgs = listOf("-Xjsr305=strict")
-            jvmTarget = JavaVersion.VERSION_11.toString()
-        }
+  withType<KotlinCompile> {
+    kotlinOptions {
+      freeCompilerArgs = listOf("-Xjsr305=strict")
+      jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
+  }
 
-    register("printVersion") {
-        doLast {
-            val version: String by project
-            println(version)
-        }
+  register("printVersion") {
+    doLast {
+      val version: String by project
+      println(version)
     }
+  }
+
+  artifacts {
+    archives(jar)
+    archives(sourcesJar)
+    archives(javadocJar)
+  }
+}
+
+val publicationName = "mavenJava"
+
+publishing {
+  publications {
+    register<MavenPublication>(publicationName) {
+      pom {
+        name.set("spring-recaptcha")
+        description.set("spring-recaptcha provide a custom filter to validate reCaptcha.")
+        url.set("https://github.com/ekino/spring-recaptcha")
+        organization {
+          name.set("ekino")
+          url.set("https://www.ekino.com/")
+        }
+      }
+      artifact(sourcesJar.get())
+      artifact(javadocJar.get())
+      from(components["java"])
+    }
+  }
 }
