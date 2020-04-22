@@ -19,6 +19,12 @@ class TestController {
   @PostMapping
   fun testReCaptchaValidationMethodPost() = ResponseEntity.noContent().build<Void>()
 
+  @PostMapping("/id/sub-resources")
+  fun testReCaptchaValidationMethodPostWithSubPath() = ResponseEntity.noContent().build<Void>()
+
+  @PostMapping("/id/other-sub-resources")
+  fun testReCaptchaValidationMethodPostWithOtherSubPath() = ResponseEntity.noContent().build<Void>()
+
   @PutMapping
   fun testReCaptchaValidationMethodPut() = ResponseEntity.noContent().build<Void>()
 }

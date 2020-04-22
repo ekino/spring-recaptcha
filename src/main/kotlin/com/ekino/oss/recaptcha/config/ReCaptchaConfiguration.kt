@@ -13,7 +13,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -49,18 +48,12 @@ class ReCaptchaConfiguration(private val reCaptchaProperties: ReCaptchaPropertie
    * Filter registration, protecting only urls defined in properties.
    */
   @Bean
-  fun reCaptchaFilter(reCaptchaValidationService: ReCaptchaValidationService) =
-    FilterRegistrationBean<ReCaptchaFilter>().apply {
-      filter = ReCaptchaFilter(
-        reCaptchaValidationService,
-        reCaptchaProperties.responseName,
-        reCaptchaProperties.byPassKey,
-        reCaptchaProperties.filteredMethods.map(HttpMethod::name).toSet()
-      )
-      reCaptchaProperties.urlPatterns?.let { urlPatterns = it }
-    }.also {
-      logger.info { "[ReCaptcha] Filter configured for url patterns ${it.urlPatterns}." }
-    }
+  fun reCaptchaFilter(reCaptchaValidationService: ReCaptchaValidationService) = ReCaptchaFilter(
+    reCaptchaValidationService,
+    reCaptchaProperties.responseName,
+    reCaptchaProperties.byPassKey,
+    reCaptchaProperties.urlPatterns,
+    reCaptchaProperties.filteredMethods.map(HttpMethod::name).toSet())
 
   @Bean
   fun reCaptchaClient(): ReCaptchaClient =

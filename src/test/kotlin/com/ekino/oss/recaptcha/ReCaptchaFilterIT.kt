@@ -57,7 +57,7 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   }
 
   @Test
-  fun `validate reCaptcha should fail when success is false`() {
+  fun `should fail to validate reCaptcha when verification success is false`() {
     val recaptchaResponse = "invalid_recaptcha_response"
     val result = assertThrows<ReCaptchaValidationException> {
       mockMvc.post("/test") {
@@ -75,7 +75,7 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   }
 
   @Test
-  fun `validate reCaptcha without response should fail`() {
+  fun `should fail to validate reCaptcha without response parameter`() {
     assertThrows<MissingResponseException> {
       mockMvc.post("/test") {
         accept = MediaType.APPLICATION_JSON
@@ -84,7 +84,7 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   }
 
   @Test
-  fun `validate reCaptcha should fail when request fail`() {
+  fun `should fail to validate reCaptcha when verification request fail`() {
     val recaptchaResponse = "other_recaptcha_response"
     val result = assertThrows<ReCaptchaValidationException> {
       mockMvc.post("/test") {
@@ -100,7 +100,7 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   }
 
   @Test
-  fun `should by pass reCaptcha validation`() {
+  fun `should by-pass reCaptcha validation`() {
     val recaptchaResponse = "bypass_recaptcha_response"
     mockMvc.post("/test") {
       accept = MediaType.APPLICATION_JSON
@@ -127,7 +127,7 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   }
 
   @Test
-  fun `should reCaptcha for PUT method`() {
+  fun `should validate reCaptcha for PUT method`() {
     val recaptchaResponse = "valid_recaptcha_response"
     mockMvc.put("/test") {
       accept = MediaType.APPLICATION_JSON
@@ -137,6 +137,32 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
     }
 
     verify(exactly = 1) { reCaptchaValidationService.validateReCaptcha(recaptchaResponse) }
+  }
+
+  @Test
+  fun `should validate reCaptcha for POST method with sub path`() {
+    val recaptchaResponse = "valid_recaptcha_response"
+    mockMvc.post("/test/id/sub-resources") {
+      accept = MediaType.APPLICATION_JSON
+      header(DEFAULT_RESPONSE_PARAM_NAME, recaptchaResponse)
+    }.andExpect {
+      status { isNoContent }
+    }
+
+    verify(exactly = 1) { reCaptchaValidationService.validateReCaptcha(recaptchaResponse) }
+  }
+
+  @Test
+  fun `should not validate reCaptcha for when url not filtered`() {
+    val recaptchaResponse = "valid_recaptcha_response"
+    mockMvc.post("/test/id/other-sub-resources") {
+      accept = MediaType.APPLICATION_JSON
+      header(DEFAULT_RESPONSE_PARAM_NAME, recaptchaResponse)
+    }.andExpect {
+      status { isNoContent }
+    }
+
+    verify(exactly = 0) { reCaptchaValidationService.validateReCaptcha(recaptchaResponse) }
   }
 
   private fun prepareStub() {

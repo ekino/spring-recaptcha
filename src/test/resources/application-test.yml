@@ -9,6 +9,7 @@ security:
     by-pass-key: by-pass-key
     url-patterns:
       - "/test"
+      - "/test/[^/]*/sub-resources"
     filtered-methods:
       - POST
       - PUT

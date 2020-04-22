@@ -21,11 +21,14 @@ class ReCaptchaFilter(
   private val validationService: ReCaptchaValidationService,
   private val responseName: String,
   private val byPassKey: String?,
+  urlPatterns: Set<String>,
   private val filteredMethods: Set<String>
 ) : OncePerRequestFilter() {
 
+  private val urlRegex: Set<Regex> = urlPatterns.map(String::toRegex).toSet()
+
   override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
-    if (!byPassReCaptchaValidation(request) && requestMethodIsFiltered(request)) {
+    if (isRequestFiltered(request)) {
       logger.debug { "[ReCaptcha] ${request.requestURI} is protected by reCaptcha. ReCaptcha response will be validated." }
 
       val reCaptchaResponse = request.getParameter(responseName)
@@ -44,6 +47,14 @@ class ReCaptchaFilter(
 
     filterChain.doFilter(request, response)
   }
+
+  private fun isRequestFiltered(request: HttpServletRequest) =
+    requestUrlIsFiltered(request) &&
+      requestMethodIsFiltered(request) &&
+      !byPassReCaptchaValidation(request)
+
+  private fun requestUrlIsFiltered(request: HttpServletRequest): Boolean =
+    urlRegex.any { request.requestURI.matches(it) }
 
   private fun requestMethodIsFiltered(request: HttpServletRequest): Boolean =
     filteredMethods.contains(request.method)

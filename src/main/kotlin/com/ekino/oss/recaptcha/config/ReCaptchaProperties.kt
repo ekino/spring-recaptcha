@@ -17,7 +17,7 @@ data class ReCaptchaProperties(
   val client: ClientProperties = ClientProperties(),
   val responseName: String = DEFAULT_RESPONSE_PARAM_NAME,
   val secret: String,
-  val urlPatterns: Set<String>? = null,
+  val urlPatterns: Set<String> = emptySet(),
   val byPassKey: String? = null,
   val filteredMethods: Set<HttpMethod> = setOf(POST)
 ) {
