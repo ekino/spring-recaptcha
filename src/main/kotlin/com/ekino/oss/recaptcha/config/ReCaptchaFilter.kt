@@ -60,5 +60,5 @@ class ReCaptchaFilter(
     filteredMethods.contains(request.method)
 
   private fun byPassReCaptchaValidation(request: HttpServletRequest) =
-    request.getHeader(BY_PASS_VALIDATION_HEADER_NAME) == byPassKey
+    byPassKey?.let { it == request.getHeader(BY_PASS_VALIDATION_HEADER_NAME) } ?: false
 }
