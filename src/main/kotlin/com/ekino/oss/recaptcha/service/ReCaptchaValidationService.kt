@@ -19,8 +19,8 @@ class ReCaptchaValidationService(private val reCaptchaClient: ReCaptchaClient, p
     } catch (exception: IOException) {
       logger.error(exception) { "Request for reCaptcha validation failed." }
       return ReCaptcaValidationResult.Failure(
-        errorCode = "recaptcha.request.failed",
-        errorMessage = exception.message ?: "ReCaptcha validation request failed."
+        code = "recaptcha.request.failed",
+        message = exception.message ?: "ReCaptcha validation request failed."
       )
     }
 
@@ -28,9 +28,9 @@ class ReCaptchaValidationService(private val reCaptchaClient: ReCaptchaClient, p
       ReCaptcaValidationResult.Success
     } else {
       ReCaptcaValidationResult.Failure(
-        errorCode = "recaptcha.validation.failed",
-        errorMessage = "Validation failed for reCaptcha response.",
-        errorDetails = result?.errorCodes
+        code = "recaptcha.validation.failed",
+        message = "Validation failed for reCaptcha response.",
+        details = result?.errorCodes
       )
     }
   }
@@ -38,5 +38,5 @@ class ReCaptchaValidationService(private val reCaptchaClient: ReCaptchaClient, p
 
 sealed class ReCaptcaValidationResult {
   object Success : ReCaptcaValidationResult()
-  data class Failure(val errorMessage: String, val errorCode: String, var errorDetails: List<String>? = null) : ReCaptcaValidationResult()
+  data class Failure(val message: String, val code: String, var details: List<String>? = null) : ReCaptcaValidationResult()
 }

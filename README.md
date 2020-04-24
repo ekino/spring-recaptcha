@@ -106,3 +106,47 @@ security:
   recaptcha:
     response-name: other-response-parameter-name
 ```
+
+## Handle failure
+
+The library provide you a default failure handling. 
+
+If the response request parameter is missing, the answer will be a `400 BAD REQUEST` with message :
+```json
+{
+    "code": "recaptcha.missing.response",
+    "message": "Unable to retrieve recaptcha response parameter. Please check configuration if endpoint really need reCaptcha validation or if response parameter name is correct."
+}
+```  
+
+If the validation fails, the response will be a `403 FORBIDDEN` with message :
+```json
+{
+    "code": "recaptcha.validation.failed",
+    "details": [ <list of error codes> ],
+    "message": "Validation failed for reCaptcha response."
+}
+```
+
+### Override default failure handling
+
+You override the default failure handling by creating your own custom failure handling service :
+```kotlin
+@Service
+class CustomReCaptchaFailureService(objectMapper: ObjectMapper): ReCaptchaFailureService(objectMapper) {
+
+    override fun handleMissingResponseParameter(response: HttpServletResponse) {
+      super.handleMissingResponseParameter(response)
+    }
+
+    override fun handleValidationFailure(validationFailure: ReCaptcaValidationResult.Failure, response: HttpServletResponse) {
+      super.handleValidationFailure(validationFailure, response)
+    }
+}
+```
+
+To handle missing response request parameter, you must override the `handleMissingResponseParameter` method.
+To handle validatino failure, you must override the `handleValidationFailure` method.
+
+A utility function `fun handleResponse(response: HttpServletResponse, status: HttpStatus, responseContent: Any)` is present 
+to help you create you response with custom `HttpStatus` and content.

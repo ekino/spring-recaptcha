@@ -1,6 +1,7 @@
 package com.ekino.oss.recaptcha.config
 
 import com.ekino.oss.recaptcha.client.ReCaptchaClient
+import com.ekino.oss.recaptcha.service.ReCaptchaFailureService
 import com.ekino.oss.recaptcha.service.ReCaptchaValidationService
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import mu.KotlinLogging
 import okhttp3.OkHttpClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET
@@ -48,12 +50,16 @@ class ReCaptchaConfiguration(private val reCaptchaProperties: ReCaptchaPropertie
    * Filter registration, protecting only urls defined in properties.
    */
   @Bean
-  fun reCaptchaFilter(reCaptchaValidationService: ReCaptchaValidationService) = ReCaptchaFilter(
+  fun reCaptchaFilter(
+    reCaptchaValidationService: ReCaptchaValidationService,
+    reCaptchaFailureService: ReCaptchaFailureService
+  ) = ReCaptchaFilter(
     reCaptchaValidationService,
     reCaptchaProperties.responseName,
     reCaptchaProperties.byPassKey,
     reCaptchaProperties.urlPatterns,
-    reCaptchaProperties.filteredMethods.map(HttpMethod::name).toSet())
+    reCaptchaProperties.filteredMethods.map(HttpMethod::name).toSet(),
+    reCaptchaFailureService)
 
   @Bean
   fun reCaptchaClient(): ReCaptchaClient =
@@ -71,4 +77,8 @@ class ReCaptchaConfiguration(private val reCaptchaProperties: ReCaptchaPropertie
         .build()
         .create(ReCaptchaClient::class.java)
     }
+
+  @Bean
+  @ConditionalOnMissingBean
+  fun reCaptchaFailureService() = ReCaptchaFailureService(objectMapper)
 }

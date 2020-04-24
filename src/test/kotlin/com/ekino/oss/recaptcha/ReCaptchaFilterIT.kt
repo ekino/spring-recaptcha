@@ -1,13 +1,7 @@
 package com.ekino.oss.recaptcha
 
-import assertk.assertThat
-import assertk.assertions.containsExactly
-import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
 import com.ekino.oss.recaptcha.config.BY_PASS_VALIDATION_HEADER_NAME
 import com.ekino.oss.recaptcha.config.DEFAULT_RESPONSE_PARAM_NAME
-import com.ekino.oss.recaptcha.exception.MissingResponseException
-import com.ekino.oss.recaptcha.exception.ReCaptchaValidationException
 import com.ekino.oss.recaptcha.service.ReCaptchaValidationService
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.post
@@ -18,7 +12,6 @@ import com.ninjasquad.springmockk.SpykBean
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
@@ -59,26 +52,39 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   @Test
   fun `should fail to validate reCaptcha when verification success is false`() {
     val recaptchaResponse = "invalid_recaptcha_response"
-    val result = assertThrows<ReCaptchaValidationException> {
-      mockMvc.post("/test") {
-        accept = MediaType.APPLICATION_JSON
-        header(DEFAULT_RESPONSE_PARAM_NAME, recaptchaResponse)
+    mockMvc.post("/test") {
+      accept = MediaType.APPLICATION_JSON
+      header(DEFAULT_RESPONSE_PARAM_NAME, recaptchaResponse)
+    }.andExpect {
+      status { isForbidden }
+      content {
+        json("""
+        {
+          "code": "recaptcha.validation.failed",
+          "details": [
+              "invalid-input-secret",
+              "invalid-input-response"
+          ],
+          "message": "Validation failed for reCaptcha response."
+      }
+      """)
       }
     }
-
-    verify(exactly = 1) { reCaptchaValidationService.validateReCaptcha(recaptchaResponse) }
-    assertThat(result.code).isEqualTo("recaptcha.validation.failed")
-    assertThat(result.message).isEqualTo("Validation failed for reCaptcha response.")
-    assertThat(result.details)
-      .isNotNull()
-      .containsExactly("invalid-input-secret", "invalid-input-response")
   }
 
   @Test
   fun `should fail to validate reCaptcha without response parameter`() {
-    assertThrows<MissingResponseException> {
-      mockMvc.post("/test") {
-        accept = MediaType.APPLICATION_JSON
+    mockMvc.post("/test") {
+      accept = MediaType.APPLICATION_JSON
+    }.andExpect {
+      status { isBadRequest }
+      content {
+        json("""
+        {
+            "code": "recaptcha.missing.response",
+            "message": "Unable to retrieve recaptcha response parameter. Please check configuration if endpoint really need reCaptcha validation or if response parameter name is correct."
+        }
+      """)
       }
     }
   }
@@ -86,17 +92,22 @@ internal class ReCaptchaFilterIT(private val mockMvc: MockMvc) {
   @Test
   fun `should fail to validate reCaptcha when verification request fail`() {
     val recaptchaResponse = "other_recaptcha_response"
-    val result = assertThrows<ReCaptchaValidationException> {
-      mockMvc.post("/test") {
-        accept = MediaType.APPLICATION_JSON
-        header(DEFAULT_RESPONSE_PARAM_NAME, recaptchaResponse)
+    mockMvc.post("/test") {
+      accept = MediaType.APPLICATION_JSON
+      header(DEFAULT_RESPONSE_PARAM_NAME, recaptchaResponse)
+    }.andExpect {
+      status { isForbidden }
+      content {
+        json("""
+        {
+          "code": "recaptcha.request.failed",
+          "message": "Connection reset"
+      }
+      """)
       }
     }
 
     verify(exactly = 1) { reCaptchaValidationService.validateReCaptcha(recaptchaResponse) }
-
-    assertThat(result.code).isEqualTo("recaptcha.request.failed")
-    assertThat(result.message).isEqualTo("Connection reset")
   }
 
   @Test

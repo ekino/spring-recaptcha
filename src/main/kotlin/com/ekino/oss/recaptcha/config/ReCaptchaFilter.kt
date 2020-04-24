@@ -1,8 +1,7 @@
 package com.ekino.oss.recaptcha.config
 
-import com.ekino.oss.recaptcha.exception.MissingResponseException
-import com.ekino.oss.recaptcha.exception.ReCaptchaValidationException
 import com.ekino.oss.recaptcha.service.ReCaptcaValidationResult
+import com.ekino.oss.recaptcha.service.ReCaptchaFailureService
 import com.ekino.oss.recaptcha.service.ReCaptchaValidationService
 import org.springframework.web.filter.OncePerRequestFilter
 import javax.servlet.FilterChain
@@ -22,7 +21,8 @@ class ReCaptchaFilter(
   private val responseName: String,
   private val byPassKey: String?,
   urlPatterns: Set<String>,
-  private val filteredMethods: Set<String>
+  private val filteredMethods: Set<String>,
+  private val reCaptchaFailureService: ReCaptchaFailureService
 ) : OncePerRequestFilter() {
 
   private val urlRegex: Set<Regex> = urlPatterns.map(String::toRegex).toSet()
@@ -33,14 +33,16 @@ class ReCaptchaFilter(
 
       val reCaptchaResponse = request.getParameter(responseName)
         ?: request.getHeader(responseName)
-        ?: throw MissingResponseException
+        ?: run {
+          reCaptchaFailureService.handleMissingResponseParameter(response)
+          return
+        }
 
       when (val validation = validationService.validateReCaptcha(reCaptchaResponse)) {
-        is ReCaptcaValidationResult.Failure -> throw ReCaptchaValidationException(
-          code = validation.errorCode,
-          message = validation.errorMessage,
-          details = validation.errorDetails
-        )
+        is ReCaptcaValidationResult.Failure -> {
+          reCaptchaFailureService.handleValidationFailure(validation, response)
+          return
+        }
         is ReCaptcaValidationResult.Success -> logger.debug { "[ReCaptcha] Validation succeeded." }
       }
     }
