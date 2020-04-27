@@ -1,0 +1,7 @@
+{
+  "success": false,
+  "errorCodes": [
+    "invalid-input-secret",
+    "invalid-input-response"
+  ]
+}
