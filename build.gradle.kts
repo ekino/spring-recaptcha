@@ -4,6 +4,7 @@ plugins {
   val kotlinVersion = "1.3.71"
   `java-library`
   `maven-publish`
+  signing
 
   kotlin("jvm") version kotlinVersion
   kotlin("plugin.spring") version kotlinVersion
@@ -80,6 +81,12 @@ tasks {
     }
   }
 
+  withType<Sign> {
+    onlyIf {
+      !gradle.taskGraph.hasTask(":publishToMavenLocal")
+    }
+  }
+
   register("printVersion") {
     doLast {
       val version: String by project
@@ -103,6 +110,25 @@ publishing {
         name.set("spring-recaptcha")
         description.set("spring-recaptcha provide a custom filter to validate reCaptcha.")
         url.set("https://github.com/ekino/spring-recaptcha")
+        licenses {
+          license {
+            name.set("MIT License (MIT)")
+            url.set("https://opensource.org/licenses/mit-license")
+          }
+        }
+        developers {
+          developer {
+            name.set("Hervé Lascaux")
+            email.set("herve.lascaux@ekino.com")
+            organization.set("ekino")
+            organizationUrl.set("https://www.ekino.com/")
+          }
+        }
+        scm {
+          connection.set("scm:git:git://github.com/ekino/spring-recaptcha.git")
+          developerConnection.set("scm:git:ssh://github.com:ekino/spring-recaptcha.git")
+          url.set("https://github.com/ekino/spring-recaptcha")
+        }
         organization {
           name.set("ekino")
           url.set("https://www.ekino.com/")
@@ -112,5 +138,24 @@ publishing {
       artifact(javadocJar.get())
       from(components["java"])
     }
+
+    repositories {
+      maven {
+        val ossrhUrl: String? by project
+        val ossrhUsername: String? by project
+        val ossrhPassword: String? by project
+
+        url = uri(ossrhUrl ?: "")
+
+        credentials {
+          username = ossrhUsername
+          password = ossrhPassword
+        }
+      }
+    }
   }
+}
+
+signing {
+  sign(publishing.publications[publicationName])
 }
