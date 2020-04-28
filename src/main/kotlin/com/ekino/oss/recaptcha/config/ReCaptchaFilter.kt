@@ -19,13 +19,14 @@ internal const val BY_PASS_VALIDATION_HEADER_NAME = "X-ReCaptcha-ByPass-Key"
 class ReCaptchaFilter(
   private val validationService: ReCaptchaValidationService,
   private val responseName: String,
-  private val byPassKey: String?,
+  byPassKey: String?,
   urlPatterns: Set<String>,
   private val filteredMethods: Set<String>,
   private val reCaptchaFailureService: ReCaptchaFailureService
 ) : OncePerRequestFilter() {
 
   private val urlRegex: Set<Regex> = urlPatterns.map(String::toRegex).toSet()
+  private val byPassKey = byPassKey?.takeIf { !it.isBlank() }
 
   override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
     if (isRequestFiltered(request)) {
