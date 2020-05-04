@@ -19,7 +19,7 @@ To add the custom filter, you need to include the dependency and configure requi
 ```kotlin
 dependencies {
   ...
-  implementation("com.ekino.oss.spring:spring-recaptcha:0.0.1-SNAPSHOT")
+  implementation("com.ekino.oss.spring:spring-recaptcha:1.0.0")
   ...
 }
 ```
